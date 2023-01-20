@@ -74,3 +74,6 @@ if obj.tui:
     else:
         printc("Esc presionado, saliendo...",Colors.red_to_blue)
         sys.exit()
+if args.upd_choice:
+    from modules.libupd import libupd
+    upd_obj = libupd()
