@@ -1,0 +1,65 @@
+{
+    "audio": [
+        "mp3",
+        "wav",
+        "mid",
+        "midi",
+        "ogg"
+    ],
+    "compressed": [
+        "rar",
+        "iso",
+        "zip",
+        "tar",
+        "gz",
+        "tar.xz",
+        "tar.gz"
+    ],
+    "docs": [
+        "doc",
+        "txt",
+        "docx",
+        "pptx",
+        "xls",
+        "xlk",
+        "csv",
+        "odp",
+        "ods",
+        "odg"
+    ],
+    "images": [
+        "jpg",
+        "png",
+        "gif",
+        "bmp",
+        "ico",
+        "jpeg"
+    ],
+    "video": [
+        "mp4",
+        "wmv",
+        "avi",
+        "mpg",
+        "3gp"
+    ],
+    "devs": [
+        "py",
+        "c",
+        "cpp",
+        "php",
+        "html",
+        "xml",
+        "db",
+        "json",
+        "js",
+        "vbs"
+    ],
+    "others": [
+        "wms",
+        "lnk",
+        "url"
+    ],
+    "user": [
+        "png"
+    ]
+}
