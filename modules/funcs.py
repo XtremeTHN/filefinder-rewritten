@@ -4,7 +4,10 @@ from pystyle import Colorate
 from zipfile import ZipFile
 
 def _progress(current,max,label=""):
-    print(f"{label} ({current}/{max}) %{int(current/max * 100)}", end='\r')
+    if current == max - 1:
+        print(f"{label} ({max}/{max}) %100")
+    else:
+        print(f"{label} ({current}/{max}) %{int(current/max * 100)}", end='\r')
 
 class jsonEx:
     def update_json(filex,data) -> None:
