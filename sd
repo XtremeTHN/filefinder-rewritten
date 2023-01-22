@@ -131,3 +131,4 @@ dmypy.json
 
 main.pybak
 modules/funcs.py.bak
+tests/*
