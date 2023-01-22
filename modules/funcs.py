@@ -33,6 +33,9 @@ class compress():
             self.file.write(x)
             callback(v,len(files),label="Comprimiendo...")
         print("")
+    
+    def finish(self):
+        self.file.close()
 
 class finder():
     def __init__(self, path, ext_list) -> None:
