@@ -14,7 +14,7 @@ parser.add_argument('-f', '--find', action='store', choices=keys, metavar="TYPE_
 parser.add_argument('--path', action='store', dest='path', help="Se usa con el argumento --find, especifica la carpeta en donde buscar")
 parser.add_argument('--filter', action='store', dest='word', help="Se usa con el argumento --find, especifica que quieres filtrar de la lista en donde se encontraron los archivos")
 parser.add_argument('--compress', choices=['tar','tar.gz','gz','zip'], dest="compress", help="Se usa con el argumento --find, comprime los archivos encontrados al formato especificado")
-parser.add_argument('-ud', '--upload-drive', action='store_true', dest='drive', help="Sube archivos encontrados a Google Drive")
+parser.add_argument('--upload-to-drive', action='store_true', dest='drive', help="Sube archivos encontrados a Google Drive")
 parser.add_argument('-ec','--edit-config', action='store_true', dest='upd_choice', help="Edita la configuracion")
 parser.add_argument('-u','--update',action='store_true', dest='update', help="Actualiza el script")
 
@@ -108,6 +108,10 @@ if obj.ext_choice != None:
         print(founded)
         comp_obj = compress(f'Comprimido {datetime.now().strftime("%d-%m-%Y %H:%M:%S")}',format=obj.compress)
         comp_obj.add(founded)
+        comp_obj.finish()
+    
+    if obj.drive != None:
+        
 
 if obj.update:
     from modules.libupd import libupd
