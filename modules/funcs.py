@@ -1,6 +1,10 @@
 import json, glob, os, re
 from simple_term_menu import TerminalMenu
 from pystyle import Colorate
+from zipfile import ZipFile
+
+def _progress(current,max,label=""):
+    print(f"{label} ({current}/{max}) %{int(current/max * 100)}", end='\r')
 
 class jsonEx:
     def update_json(filex,data) -> None:
@@ -18,17 +22,27 @@ class termui:
         menu = TerminalMenu(opts)
         return menu.show()
 
+class compress():
+    def __init__(self, filename : str, format="zip"):
+        filename = os.path.splitext(filename)[0]
+        if format == "zip":
+            self.file = ZipFile(f'{filename}.{format}', 'w')
+
+    def add(self, files : list, callback=_progress):
+        for v,x in enumerate(files):
+            self.file.write(x)
+            callback(v,len(files),label="Comprimiendo...")
+        print("")
+
 class finder():
-    def __init__(self, path, ext_list):
-        
+    def __init__(self, path, ext_list) -> None:
         if os.path.basename(path) != '':
             path = path + '/'
         self.path = path
         jsonxd = jsonEx.get('modules/exts.json')
         self.exts = jsonxd[ext_list]
-        
     
-    def find(self):
+    def find(self) -> dict:
         founded = {}
         self.all = []
         for x in self.exts:
@@ -42,7 +56,7 @@ class finder():
             return 1
         return founded
     
-    def find_userext(self,userext):
+    def find_userext(self,userext) -> dict:
         founded = {}
         self.all = []
         path = glob.glob(f"{self.path}**/*.{userext}", recursive=True)
@@ -52,7 +66,7 @@ class finder():
         self.all.extend(path)
         return founded
     
-    def find_in_list(self,word,strict=False):
+    def find_in_list(self,word,strict=False) -> list:
         if not strict:
             word = os.path.splitext(word)[0]
             result = filter(lambda x: re.search("{}.*".format(word), x), self.all)
@@ -64,8 +78,11 @@ class finder():
             for x in ind:
                 real.append(self.all[x])
             return real
+            
+    def generalize(self) -> list:
+        return self.all
 
-    def __findstrict(self,word):
+    def __findstrict(self,word) -> list:
         lowercase = list(map(lambda x: x.lower(), self.all))
         word = word.lower()
         ret = []
@@ -74,7 +91,9 @@ class finder():
                 ret.append(i)
         return ret
 
-            
+__all__ = ["finder.__finderstrict"]
 
-def printc(msg,color, endx='\n'):
-    print(Colorate.Horizontal(color, "[INFO]"), msg, end=endx)
+
+def printc(msg,color, endx='\n', label="[INFO]"):
+    print(Colorate.Horizontal(color, label), msg, end=endx)
+

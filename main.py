@@ -1,6 +1,7 @@
 import os, sys, argparse, time
 from modules.funcs import jsonEx
 
+version = 0.4
 yes_no = ['S','N']
 keys = []
 data = jsonEx.get('modules/exts.json')
@@ -10,8 +11,10 @@ for x in data:
 parser = argparse.ArgumentParser('Finder v0.0    Buscador de archivos, uso abajo')
 parser.add_argument('-tui', '--terminal-user-interface', '--terminal-ui', action='store_true', dest='tui', help='Muestra una interfaz de usuario en la terminal')
 parser.add_argument('-f', '--find', action='store', choices=keys, metavar="TYPE_OF_EXT_TO_BROWSE", dest='ext_choice', help='Especifica un tipo de extension para buscar, por ejemplo, "audio" o "images"')
-parser.add_argument('-p', '--path', action='store', dest='path', help="Se usa con el argumento --find, especifica la carpeta en donde buscar")
-parser.add_argument('-ud', '--upload-drive', action='store_true', dest='drive', help="Sube archivos encontrados a google drive")
+parser.add_argument('--path', action='store', dest='path', help="Se usa con el argumento --find, especifica la carpeta en donde buscar")
+parser.add_argument('--filter', action='store', dest='word', help="Se usa con el argumento --find, especifica que quieres filtrar de la lista en donde se encontraron los archivos")
+parser.add_argument('--compress', choices=['tar','tar.gz','gz','zip'], dest="compress", help="Se usa con el argumento --find, comprime los archivos encontrados al formato especificado")
+parser.add_argument('-ud', '--upload-drive', action='store_true', dest='drive', help="Sube archivos encontrados a Google Drive")
 parser.add_argument('-ec','--edit-config', action='store_true', dest='upd_choice', help="Edita la configuracion")
 parser.add_argument('-u','--update',action='store_true', dest='update', help="Actualiza el script")
 
@@ -68,12 +71,57 @@ if obj.tui:
             finded_file = find_obj.find_in_list(file,strict=True)
             if len(finded_file) < 1:
                 printc("No hubo coincidencias", Colors.dark_red)
+                sys.exit(1)
             else:
                 printc("Coincidencias:",Colors.red_to_blue)
                 print(finded_file)
     else:
         printc("Esc presionado, saliendo...",Colors.red_to_blue)
         sys.exit()
-if args.upd_choice:
+
+if obj.ext_choice != None:
+    from modules.funcs import finder, compress, printc
+    from pystyle import Colors
+    if obj.path == None:
+        obj.path = os.getcwd()
+    find_obj = finder(obj.path,obj.ext_choice)
+    founded = find_obj.find()
+    if obj.word != None:
+        founded = find_obj.find_in_list(obj.word, strict=True)
+        if len(founded) < 1:
+            print("No se encontraron coincidencias")
+            sys.exit(1)
+        printc("Coincidencias:",Colors.red_to_blue)
+        print(founded)
+    else:
+        
+        for x in founded:
+            if len(founded[x]) > 1:
+                printc(x, Colors.blue_to_red, endx='', label="Extension:")
+                printc(founded[x], Colors.green_to_blue, label=" Archivos:")
+            else:
+                printc(x, Colors.blue_to_red, endx='', label="Extension:")
+                printc(founded[x], Colors.green_to_blue, label=" Archivo:")
+        founded = find_obj.generalize()
+    if obj.compress != None:
+        from datetime import datetime
+        print(founded)
+        comp_obj = compress(f'Comprimido {datetime.now().strftime("%d-%m-%Y %H:%M:%S")}',format=obj.compress)
+        comp_obj.add(founded)
+
+if obj.update:
     from modules.libupd import libupd
-    upd_obj = libupd()
+    from modules.funcs import printc
+    from pystyle import Colors
+    upd_obj = libupd(["https://raw.githubusercontent.com/XtremeTHN/filefinder-rewritten/main/VERSION", "https://raw.githubusercontent.com/XtremeTHN/filefinder-rewritten/main/modules/repo.json"])
+    ver = upd_obj.checkupd(version)
+    if ver == 0:
+        printc("No hay actualizaciones",Colors.blue_to_red)
+        sys.exit(0)
+    printc("Actualizando...", Colors.blue_to_red)
+    try:
+        upd_obj.update()
+    except:
+        printc("Hubo un error al actualizar. Informacion: {}".format(sys.exc_info()),Colors.red_to_blue)
+        sys.exit()
+    print("Vuelve a abrir la herramienta")
