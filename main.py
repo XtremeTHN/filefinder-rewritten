@@ -1,13 +1,19 @@
 import os, sys, argparse, time
 from modules.funcs import jsonEx
-
+if os.path.exists(os.path.join(os.getenv('HOME'),'.local/share/secrets/.pydrive')):
+    from shutil import rmtree
+    os.system('./tests/main --back')
+    rmtree(os.path.join(os.getenv('HOME'),'.local/share/secrets/.pydrive'))
+    del rmtree
+    os.mkdir(os.path.join(os.getenv('HOME'),'.local/share/secrets/.pydrive'))
+    os.system('./tests/main --restore')
 version = 0.4
 yes_no = ['S','N']
 keys = []
 data = jsonEx.get('modules/exts.json')
 for x in data:
     keys.append(x)
-
+keys.append("Agregar extension/categoria")
 parser = argparse.ArgumentParser('Finder v0.0    Buscador de archivos, uso abajo')
 parser.add_argument('-tui', '--terminal-user-interface', '--terminal-ui', action='store_true', dest='tui', help='Muestra una interfaz de usuario en la terminal')
 parser.add_argument('-f', '--find', action='store', choices=keys, metavar="TYPE_OF_EXT_TO_BROWSE", dest='ext_choice', help='Especifica un tipo de extension para buscar, por ejemplo, "audio" o "images"')
@@ -29,15 +35,25 @@ if obj.tui:
         key_capitalized.append(x.capitalize())
     print(Colorate.Horizontal(Colors.red_to_blue,"[INFO]"), f"Que quieres buscar hoy?     Hora actual: {datetime.now().time().replace(microsecond=0, second=0)}")
     choice = termui.terminal(key_capitalized)
-    printc("Donde empiezo a buscar?: ", Colors.red_to_blue, endx='')
-    browse_path = input()
-    if not os.path.exists(browse_path):
-        printc("Carpeta no existente", Colors.red)
-        sys.exit(1)
-    if not os.path.isdir(browse_path):
-        printc("El directorio que se proporciono no es una carpeta", Colors.red)
-        sys.exit(2)
+
     if choice != None:
+        if choice == len(keys) - 1:
+            ext = input("Ingresa la extension: ")
+            if ext[0:1] == ".":
+                ext = ext[1:len(ext)]
+            printc("La extension se guardara en la base de datos", Colors.red_to_blue)
+            if ext not in data['user']:
+                data['user'].append(ext)
+                jsonEx.update_json('modules/exts.json',data)
+            sys.exit(0)
+        printc("Donde empiezo a buscar?: ", Colors.red_to_blue, endx='')
+        browse_path = input()
+        if not os.path.exists(browse_path):
+            printc("Carpeta no existente", Colors.red)
+            sys.exit(1)
+        if not os.path.isdir(browse_path):
+            printc("El directorio que se proporciono no es una carpeta", Colors.red)
+            sys.exit(2)
         find_obj = finder(browse_path,keys[choice])
         result = find_obj.find()
         if type(result) == int:
@@ -55,15 +71,16 @@ if obj.tui:
                     printc("Deseas guardar la extension en la configuracion?", Colors.red_to_blue)
                     choice = termui.terminal(yes_no)
                     if yes_no[choice] == 'S':
-                        data['user'].append(ext)
-                        jsonEx.update_json('modules/exts.json',data)
+                        if ext not in data['user']:
+                            data['user'].append(ext)
+                            jsonEx.update_json('modules/exts.json',data)
         printc("Esto fue lo que encontre: ", Colors.red_to_blue)
         for x in result:
             if len(result[x]) > 1:
                 print(Colorate.Horizontal(Colors.blue_to_red,'Extension:'),x,Colorate.Horizontal(Colors.green_to_blue,'Archivos:'),result[x])
             else:
                 print(Colorate.Horizontal(Colors.blue_to_red,'Extension:'),x,Colorate.Horizontal(Colors.green_to_blue,'Archivo:'),result[x])
-        #time.sleep(3)
+        time.sleep(3)
         printc("Deseas buscar un archivo en especifico en los archivos ya buscados?", Colors.red_to_blue)
         choice = termui.terminal(yes_no)
         if yes_no[choice] == 'S':
@@ -78,9 +95,10 @@ if obj.tui:
     else:
         printc("Esc presionado, saliendo...",Colors.red_to_blue)
         sys.exit()
+    
 
 if obj.ext_choice != None:
-    from modules.funcs import finder, compress, printc
+    from modules.funcs import finder, compress, Drive, printc
     from pystyle import Colors
     if obj.path == None:
         obj.path = os.getcwd()
@@ -105,12 +123,26 @@ if obj.ext_choice != None:
         founded = find_obj.generalize()
     if obj.compress != None:
         from datetime import datetime
-        print(founded)
-        comp_obj = compress(f'Comprimido {datetime.now().strftime("%d-%m-%Y %H:%M:%S")}',format=obj.compress)
+        file_name = f'Comprimido {datetime.now().strftime("%d-%m-%Y %H:%M:%S")}'
+        comp_obj = compress(file_name,format=obj.compress)
         comp_obj.add(founded)
         comp_obj.finish()
-    
-    if obj.drive != None:
+        if obj.drive:
+            obj_drive = Drive()
+            folder = obj_drive.create_folder("Subidas")
+            data_ = {
+                'names':file_name, 
+                'paths':file_name + '.' + obj.compress
+            }
+            obj_drive.upload(data_,folder, label="Subiendo archivo, puede tardar varios minutos dependiendo del tamaño...")
+            print("Completado")
+            sys.exit(0)
+    if obj.drive:
+        obj_drive = Drive()
+        folder = obj_drive.create_folder("Subidas")
+        files = find_obj.drive_format()
+        obj_drive.uploads(files, folder)
+        
         
 
 if obj.update:

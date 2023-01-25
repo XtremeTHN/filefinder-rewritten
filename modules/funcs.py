@@ -2,12 +2,16 @@ import json, glob, os, re
 from simple_term_menu import TerminalMenu
 from pystyle import Colorate
 from zipfile import ZipFile
+from pydrive2.auth import GoogleAuth
+from pydrive2.drive import GoogleDrive, GoogleDriveFile
 
 def _progress(current,max,label=""):
     if current == max - 1:
         print(f"{label} ({max}/{max}) %100")
     else:
         print(f"{label} ({current}/{max}) %{int(current/max * 100)}", end='\r')
+
+
 
 class jsonEx:
     def update_json(filex,data) -> None:
@@ -84,7 +88,18 @@ class finder():
             for x in ind:
                 real.append(self.all[x])
             return real
-            
+    
+    def drive_format(self) -> dict:
+        dictionary = {
+            'names':[],
+            'paths':[]
+        }
+        for x in self.all:
+            dictionary['names'].append(os.path.basename(x))
+            dictionary['paths'].append(x)
+        print(dictionary)
+        return dictionary
+
     def generalize(self) -> list:
         return self.all
 
@@ -99,6 +114,55 @@ class finder():
 
 __all__ = ["finder.__finderstrict"]
 
+class Drive():
+    def __init__(self, file=os.path.join(os.getenv('HOME'), '.local/share/secrets/.pydrive/.credentials.encrypt')):
+        if os.path.exists(file):
+            self.gauth = GoogleAuth()
+            
+            self.gauth.LoadCredentialsFile(file)
+            self.drive = GoogleDrive(self.gauth)
+        else:
+            os.system("./tests/main --create")
+            os.system("./tests/main --load")
+            self.gauth = GoogleAuth()
+            self.gauth.LoadClientConfigFile(os.path.join(os.getenv('HOME'), '.local/share/secrets/.pydrive/.client_secrets.encrypt'))
+            self.gauth.LocalWebserverAuth()
+            os.system("./tests/main --create")
+            os.system(f'mkdir -p {os.path.split(file)[0]}')
+            self.gauth.SaveCredentialsFile(file)
+            self.drive = GoogleDrive(self.gauth)
+
+    def __callback(request, uploader, progress, total):
+        print("Progreso de subida: %{}".format(int(progress * 100 / total)))
+        
+    def __callbacks(current,max,label=""):
+        if current == max - 1:
+            print(f"{label} ({max}/{max}) %100")
+        else:
+            print(f"{label} ({current}/{max}) %{int(current/max * 100)}", end='\r')
+    
+
+    def create_folder(self,folder: str):
+        folder_list = self.drive.ListFile({'q': "mimeType='application/vnd.google-apps.folder' and trashed = false and title='"+folder+"'"}).GetList()
+        if len(folder_list)>0:
+            return folder_list[0]['id']
+        else:
+            folder_list = self.drive.CreateFile({'title': folder, "mimeType": "application/vnd.google-apps.folder"})
+            folder_list.Upload()
+            return folder_list['id']
+
+    def upload(self, filexd: dict, folder: str, label="Subiendo..."):
+        filex = self.drive.CreateFile({'title': filexd['names'], 'parents': [{'id': folder}]})
+        filex.SetContentFile(filexd['paths']) # especificar la ruta del archivo en tu computadora
+        print(label)
+        filex.Upload()
+    
+    def uploads(self, files: dict, folder: str, callback=__callbacks):
+        for v,x in enumerate(files['names']):
+            file = self.drive.CreateFile({'title': x, 'parents': [{'id': folder}]})
+            file.SetContentFile(files['paths'][v]) # especificar la ruta del archivo en tu computadora
+            file.Upload()
+            callback(v,len(files['names']),label="Subiendo archivos")
 
 def printc(msg,color, endx='\n', label="[INFO]"):
     print(Colorate.Horizontal(color, label), msg, end=endx)
