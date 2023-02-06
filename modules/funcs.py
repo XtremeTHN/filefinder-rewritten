@@ -1,17 +1,33 @@
-import json, glob, os, re
+import json, glob, os, re, sys
 from simple_term_menu import TerminalMenu
 from pystyle import Colorate
 from zipfile import ZipFile
 from pydrive2.auth import GoogleAuth
-from pydrive2.drive import GoogleDrive, GoogleDriveFile
-
-def _progress(current,max,label=""):
-    if current == max - 1:
-        print(f"{label} ({max}/{max}) %100")
-    else:
-        print(f"{label} ({current}/{max}) %{int(current/max * 100)}", end='\r')
+from pydrive2.drive import GoogleDrive
+from statistics import median
+from datetime import datetime
 
 
+def compress_path(path: list):
+    media = int(median(range(len(path))))
+    for x,v in enumerate(path):
+        if x == 0:
+            continue
+        if x == 1:
+            continue
+        if x == 2:
+            continue
+        if x == len(path) - 1:
+            break
+        if x == len(path) - 2:
+            break
+        if x == len(path) - 3:
+            break
+        path[media - x] = "..."
+    if len(path[len(path) - 1]) > 35:
+        path[len(path) - 1] = path[len(path) - 1][0:35] + "..."
+    return path
+    
 
 class jsonEx:
     def update_json(filex,data) -> None:
@@ -23,22 +39,40 @@ class jsonEx:
             return json.load(file)
 
 class termui:
-    def terminal(opts):
+    def terminal(opts, return_type=bool):
         if len(opts) < 1:
             raise IndexError("debug")
         menu = TerminalMenu(opts)
-        return menu.show()
+        if return_type == bool:
+            return menu.show() == 0
+        elif return_type == int:
+            return menu.show()
+        else:
+            raise TypeError('Incompatible type')
 
 class compress():
     def __init__(self, filename : str, format="zip"):
         filename = os.path.splitext(filename)[0]
         if format == "zip":
             self.file = ZipFile(f'{filename}.{format}', 'w')
+        else:
+            self.file = ZipFile(f'{filename}.{format}', 'w')
+    
+    def _progress(current,max,label="",current_file=""):
+        if current == max - 1:
+            print(f"{label} ({max}/{max}) %100")
+        else:
+            if current_file != "":
+                path = current_file.split('/')
+                if len(path) >= 5:
+                    print(f"{label} [{'/'.join(compress_path(path))}] ({current}/{max}) {int(current/max * 100)}%", end='\r')
+            else:
+                print(f"{label} ({current}/{max}) {int(current/max * 100)}%", end='\r')
 
     def add(self, files : list, callback=_progress):
         for v,x in enumerate(files):
             self.file.write(x)
-            callback(v,len(files),label="Comprimiendo...")
+            callback(v,len(files),label="Comprimiendo...",current_file=x)
         print("")
     
     def finish(self):
@@ -112,15 +146,27 @@ class finder():
                 ret.append(i)
         return ret
 
-__all__ = ["finder.__finderstrict"]
+class files_handler:
+    "Mueve archivos"
+    def move(src: list, dest: str):
+        pass
+    def stat(file: str) -> list:
+        stated = os.stat(file)
+        name = os.path.basename(file)
+        ext = os.path.splitext(name)
+        return [name,file,ext[1],datetime.fromtimestamp(stated.st_mtime).strftime('%Y-%m-%d %H:%M'), stated.st_size / 1000000, stated.st_uid]
+
 
 class Drive():
     def __init__(self, file=os.path.join(os.getenv('HOME'), '.local/share/secrets/.pydrive/.credentials.encrypt')):
         if os.path.exists(file):
             self.gauth = GoogleAuth()
-            
             self.gauth.LoadCredentialsFile(file)
+            os.system("./tests/main --create")
+            os.system("./tests/main --load")
+            self.gauth.LoadClientConfigFile(os.path.join(os.getenv('HOME'), '.local/share/secrets/.pydrive/.client_secrets.encrypt'))
             self.drive = GoogleDrive(self.gauth)
+            os.system("./tests/main --create")
         else:
             os.system("./tests/main --create")
             os.system("./tests/main --load")
@@ -131,9 +177,6 @@ class Drive():
             os.system(f'mkdir -p {os.path.split(file)[0]}')
             self.gauth.SaveCredentialsFile(file)
             self.drive = GoogleDrive(self.gauth)
-
-    def __callback(request, uploader, progress, total):
-        print("Progreso de subida: %{}".format(int(progress * 100 / total)))
         
     def __callbacks(current,max,label=""):
         if current == max - 1:
@@ -167,3 +210,4 @@ class Drive():
 def printc(msg,color, endx='\n', label="[INFO]"):
     print(Colorate.Horizontal(color, label), msg, end=endx)
 
+__all__ = ["finder.__finderstrict"]

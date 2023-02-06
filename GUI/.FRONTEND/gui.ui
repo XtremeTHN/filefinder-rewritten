@@ -1,0 +1,88 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<!-- Created with Cambalache 0.10.3 -->
+<interface>
+  <!-- interface-name filefinder.ui -->
+  <requires lib="gtk" version="4.6"/>
+  <object class="GtkApplicationWindow" id="main_window">
+    <child>
+      <object class="GtkBox">
+        <property name="margin-bottom">8</property>
+        <property name="margin-end">11</property>
+        <property name="margin-start">8</property>
+        <property name="margin-top">10</property>
+        <property name="orientation">vertical</property>
+        <property name="spacing">18</property>
+        <child>
+          <object class="GtkLabel">
+            <property name="label">PyFileFinder</property>
+          </object>
+        </child>
+        <child>
+          <object class="GtkCenterBox">
+            <child type="start">
+              <object class="GtkLabel">
+                <property name="label">Directorio de busqueda</property>
+                <property name="margin-end">9</property>
+                <child>
+                  <object class="GtkCenterBox"/>
+                </child>
+                <child>
+                  <object class="GtkCenterBox"/>
+                </child>
+              </object>
+            </child>
+            <child type="center">
+              <object class="GtkEntry" id="input1"/>
+            </child>
+            <child type="end">
+              <object class="GtkButton" id="exam_bt">
+                <property name="label">...</property>
+              </object>
+            </child>
+          </object>
+        </child>
+        <child>
+          <object class="GtkCenterBox">
+            <child type="start">
+              <object class="GtkLabel">
+                <property name="label">Filtrar por extension</property>
+                <property name="margin-end">9</property>
+              </object>
+            </child>
+            <child type="center">
+              <object class="GtkComboBox" id="combo"/>
+            </child>
+            <child type="end">
+              <object class="GtkButton" id="other_btt">
+                <property name="label">Otro</property>
+                <property name="margin-start">10</property>
+              </object>
+            </child>
+          </object>
+        </child>
+        <child>
+          <object class="GtkCenterBox">
+            <child type="center">
+              <object class="GtkButton" id="find">
+                <property name="label">Buscar</property>
+                <property name="margin-bottom">1</property>
+                <property name="margin-end">40</property>
+                <property name="margin-start">46</property>
+              </object>
+            </child>
+            <child type="start">
+              <object class="GtkButton" id="conf_btt">
+                <property name="label">Configuracion</property>
+              </object>
+            </child>
+            <child type="end">
+              <object class="GtkButton" id="extra">
+                <property name="label">Extra XD</property>
+              </object>
+            </child>
+          </object>
+        </child>
+      </object>
+    </child>
+  </object>
+</interface>

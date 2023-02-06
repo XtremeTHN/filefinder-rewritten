@@ -1,5 +1,6 @@
 # Byte-compiled / optimized / DLL files
 __pycache__/
+modules/__pycache__/
 *.py[cod]
 *$py.class
 
@@ -133,3 +134,5 @@ main.pybak
 modules/funcs.py.bak
 tests/main.py
 tests/setup.py
+FileFinder.cmb
+GUI/gtk\ copy.py
