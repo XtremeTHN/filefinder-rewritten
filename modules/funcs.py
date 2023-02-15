@@ -70,10 +70,17 @@ class compress():
                 print(f"{label} ({current}/{max}) {int(current/max * 100)}%", end='\r')
 
     def add(self, files : list, callback=_progress):
-        for v,x in enumerate(files):
-            self.file.write(x)
-            callback(v,len(files),label="Comprimiendo...",current_file=x)
+        if callback == None:
+            for v,x in enumerate(files):
+                self.file.write(x)
+        else:
+            for v,x in enumerate(files):
+                self.file.write(x)
+                callback(v,len(files),label="Comprimiendo...",current_file=x)
         print("")
+    
+    def add_single(self, files: str):
+        self.file.write(files)
     
     def finish(self):
         self.file.close()
@@ -147,7 +154,8 @@ class finder():
         return ret
 
 class files_handler:
-    "Mueve archivos"
+    def wipe_txt(file: str):
+        open(file,'w').close()
     def move(src: list, dest: str):
         pass
     def stat(file: str) -> list:
@@ -155,6 +163,22 @@ class files_handler:
         name = os.path.basename(file)
         ext = os.path.splitext(name)
         return [name,file,ext[1],datetime.fromtimestamp(stated.st_mtime).strftime('%Y-%m-%d %H:%M'), stated.st_size / 1000000, stated.st_uid]
+    def save(file: str, cont: str | list):
+        if type(cont) == list:
+            files_handler.wipe_txt(file)
+            with open(file,'a') as file:
+                file.write(cont[0])
+                for v,x in enumerate(cont):
+                    if v == 0:
+                        continue
+                    file.write('\n' + x)
+        elif type(cont) == str:
+            with open(file, 'w') as file:
+                file.write(cont)
+        else:
+            raise TypeError("Not str or list object")
+                
+                    
 
 
 class Drive():

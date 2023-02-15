@@ -1,15 +1,22 @@
-import gi, sys, os
+import gi, sys, os, time, threading
 gi.require_version('Gtk', '4.0')
 gi.require_version('Adw', '1')
 
-from gi.repository import Gtk, Gio, Adw, Pango
-from modules.funcs import jsonEx, files_handler, finder
+from gi.repository import Gtk, Gio, Adw, Pango, GLib, GObject
+from modules.funcs import jsonEx, files_handler, finder, compress
 Adw.init()
+
+        
 class DialogSelecFolder(Gtk.FileChooserDialog):
     # Definindo o diretório padrão.
-    def __init__(self, parent, inputx=None, folder=True):
+    def __init__(self, parent, inputx=None, folder=True, func=None, cmp=False, progress_widget=None, label_widget=None,files=None):
         self.input = inputx
         self.folder = folder
+        self.func = func
+        self.cmp = cmp
+        self.complete = False
+        self.label_widget = label_widget
+
         super().__init__(transient_for=parent, use_header_bar=True)
         if folder:
             self.set_action(action=Gtk.FileChooserAction.SELECT_FOLDER)
@@ -27,15 +34,20 @@ class DialogSelecFolder(Gtk.FileChooserDialog):
         )
 
         self.show()
-
     def dialog_response(self, widget, response):
-        print(response)
         if response == Gtk.ResponseType.OK:
             if self.folder:
                 glocalfile = self.get_file()
                 self.input.set_text(glocalfile.get_path())
             else:
-                print(self.get_file().get_path, self.get_file().get_basename)
+                self.folder = self.get_file()
+                if self.cmp:
+                    self.destroy()
+                    self.label_widget.set_text("Operacion: Comprimir  Progreso: ")
+                    self.func(self.get_file().get_path())
+                else:
+                    self.func(self.get_file())
+                    self.complete = True
         widget.close()
 
 class ResultsWindow(Gtk.Dialog):
@@ -49,19 +61,6 @@ class ResultsWindow(Gtk.Dialog):
         self.set_title(title='Resultados')
         self.set_default_size(width=int(1366 / 2), height=int(768 / 2))
         self.set_size_request(width=int(1366 / 2), height=int(768 / 2))
-
-        headerbar = Gtk.HeaderBar.new()
-        self.set_titlebar(titlebar=headerbar)
-
-        menu_button_model = Gio.Menu()
-        menu_button_model.append('Preferências', 'app.preferences')
-
-        menu_button = Gtk.MenuButton()
-        menu_button.set_icon_name(icon_name='open-menu-symbolic')
-        menu_button.set_menu_model(menu_model=menu_button_model)
-        menu_button.connect('activate', self.headerbtt_clicked)
-        menu_button.activate()
-        headerbar.pack_end(child=menu_button)
 
         vbox = Gtk.Box.new(orientation=Gtk.Orientation.VERTICAL, spacing=12)
         vbox.set_margin_top(margin=12)
@@ -77,13 +76,13 @@ class ResultsWindow(Gtk.Dialog):
         # Criando um modelo com `Gtk.ListStore()`.
         self.list_store = Gtk.ListStore(str, str, str, str, float, int)
 
-        find_obj = finder(input1.get_text(),combo_selected)
-        finded = find_obj.find()
-        
+        self.find_obj = finder(input1.get_text(),combo_selected)
+        _ = self.find_obj.find()
+        self.general = []
         # Adicionando os dados no `Gtk.ListStore()`.
-        for x in find_obj.all:
-            print(files_handler.stat(x))
+        for x in self.find_obj.generalize():
             self.list_store.append(files_handler.stat(x))
+            self.general.append(files_handler.stat(x))
 
         # Criando um `Gtk.TreeView()`.
         tree_view = Gtk.TreeView.new_with_model(model=self.list_store)
@@ -115,10 +114,86 @@ class ResultsWindow(Gtk.Dialog):
             # Adicionando a coluna no `Gtk.TreeView()`.
             tree_view.append_column(column=treeviewcolumn)
 
-        hbuton_box = Gtk.Box.new(orientation=Gtk.Orientation.HORIZONTAL, spacing=12)
+        hbuton_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=12)
+        progress_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=0)
+        labels_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=12)
         vbox.append(child=hbuton_box)
-    def headerbtt_clicked(self, btt):
-        DialogSelecFolder(self.get_parent(),folder=False)
+        vbox.append(child=progress_box)
+
+        self.btt1 = Gtk.Button.new()
+        self.btt2 = Gtk.Button.new()
+        self.btt3 = Gtk.Button.new()
+        self.label_info = Gtk.Label.new()
+        self.label_prog = Gtk.Label.new()
+        self.progress = Gtk.ProgressBar.new()
+        
+        self.progress.set_pulse_step(1 / len(self.find_obj.generalize()))
+        self.progress.set_show_text(True)
+        self.btt1.set_label("Guardar resultados")
+        self.btt2.set_label("Comprimir archvios")
+        self.btt3.set_label("Filtrar por nombre")
+        self.label_info.set_label("Operacion: N/A ")
+        self.label_prog.set_label("Progreso: N/A")
+        self.progress.set_text("N/A")
+        self.btt1.connect('clicked',self.btt_clicked)
+        self.btt2.connect('clicked', self.comp_clicked)
+        self.btt3.connect('clicked', self.filter_clicked)
+
+        labels_box.append(child=self.label_info)
+        labels_box.append(child=self.label_prog)
+
+        hbuton_box.append(child=self.btt1)
+        hbuton_box.append(child=self.btt2)
+        hbuton_box.append(child=self.btt3)
+        hbuton_box.append(child=labels_box)
+
+        progress_box.append(child=self.progress)
+        progress_box.set_homogeneous(True)
+
+    def update_prog(self):
+        self.btt2.set_sensitive(False)
+        for x,v in enumerate(self.find_obj.generalize()):
+            self.comp.add_single(v)
+            GLib.idle_add(self.progress.set_fraction, x / len(self.find_obj.generalize()))
+            GLib.idle_add(self.label_prog.set_label,f"Progreso: {int(x * 100 / len(self.find_obj.generalize()))}%")
+        self.comp.finish()
+
+    def asd(self,a):
+        self.comp = compress(a, format='zip')
+
+        threading.Thread(target=self.update_prog).start()
+
+    def new_file(self,file):
+        files_handler.save(file.get_path(),self.find_obj.generalize())
+
+    def btt_clicked(self, btt):
+        DialogSelecFolder(self.get_parent(),folder=False, func=self.new_file)
+        
+    def comp_clicked(self,btt):
+        DialogSelecFolder(self.get_parent(),folder=False, cmp=True, func=self.asd, label_widget=self.label_info, files=self.find_obj.generalize())
+
+    def filter_clicked(self,btt):
+        #self.find_obj.
+        pass
+
+    def on_question_clicked(self, widget):
+        dialog = Gtk.MessageDialog(
+            transient_for=self.get_parent(),
+            flags=Gio.ApplicationFlags.FLAGS_NONE,
+            message_type=Gtk.MessageType.QUESTION,
+            buttons=Gtk.ButtonsType.YES_NO,
+            text=self.dialog_msg1,
+        )
+        dialog.format_secondary_text(
+            self.dialog_msg2
+        )
+        response = dialog.run()
+        if response == Gtk.ResponseType.YES:
+            self.dialog_response = True
+        elif response == Gtk.ResponseType.NO:
+            self.dialog_response = False
+
+        dialog.destroy()
 
 class CustomDialog(Gtk.Dialog):
 
