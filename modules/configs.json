@@ -1,0 +1,5 @@
+{
+    "delay_progress_bar": true,
+    "seconds_delay": 0.001,
+    "check_updates": false
+}

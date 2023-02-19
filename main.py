@@ -1,6 +1,10 @@
+#!/usr/bin/env python3
 import os, sys, argparse, time
-from modules.funcs import jsonEx
-from GUI.gtk import gtk
+try:
+    from modules.funcs import jsonEx
+except ModuleNotFoundError:
+    os.chdir(os.getenv("FINDER_PATH"))
+    from modules.funcs import jsonEx
 if os.path.exists(os.path.join(os.getenv('HOME'),'.local/share/secrets/.pydrive')):
     from shutil import rmtree
     os.system('./tests/main --back')
@@ -24,6 +28,7 @@ parser.add_argument('--compress', choices=['tar','tar.gz','gz','zip'], dest="com
 parser.add_argument('--upload-to-drive', action='store_true', dest='drive', help="Sube archivos encontrados a Google Drive")
 parser.add_argument('-ec','--edit-config', action='store_true', dest='upd_choice', help="Edita la configuracion")
 parser.add_argument('-gui', choices=["gtk","qt"], dest="gui", help="Muestra una interfaz grafica")
+parser.add_argument('--future', action='store_true', dest="future", help="Desbloquea la interfaz grafica nueva")
 parser.add_argument('-u','--update',action='store_true', dest='update', help="Actualiza el script")
 
 obj = parser.parse_args()
@@ -177,9 +182,14 @@ if obj.ext_choice != None:
         obj_drive.uploads(files, folder)
         
 if obj.gui:
-    from gi.repository import Gio
-    gtk(application_id='br.com.justcode.Example',
-        flags=Gio.ApplicationFlags.FLAGS_NONE)
+    if not obj.future:
+        from GUI.gtk import gtk
+        from gi.repository import Gio
+        gtk(application_id='com.github.Xtreme.filefinder',
+            flags=Gio.ApplicationFlags.FLAGS_NONE)
+    else:
+        from GUI.gtk_future import MainApplication
+    
 
 if obj.update:
     from modules.libupd import libupd

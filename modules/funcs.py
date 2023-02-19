@@ -6,6 +6,7 @@ from pydrive2.auth import GoogleAuth
 from pydrive2.drive import GoogleDrive
 from statistics import median
 from datetime import datetime
+from shutil import move as mv
 
 
 def compress_path(path: list):
@@ -138,7 +139,6 @@ class finder():
         for x in self.all:
             dictionary['names'].append(os.path.basename(x))
             dictionary['paths'].append(x)
-        print(dictionary)
         return dictionary
 
     def generalize(self) -> list:
@@ -156,25 +156,25 @@ class finder():
 class files_handler:
     def wipe_txt(file: str):
         open(file,'w').close()
-    def move(src: list, dest: str):
-        pass
+        
     def stat(file: str) -> list:
         stated = os.stat(file)
         name = os.path.basename(file)
         ext = os.path.splitext(name)
         return [name,file,ext[1],datetime.fromtimestamp(stated.st_mtime).strftime('%Y-%m-%d %H:%M'), stated.st_size / 1000000, stated.st_uid]
-    def save(file: str, cont: str | list):
-        if type(cont) == list:
+    def save(file: str, content: str | list):
+        if type(content) == list:
             files_handler.wipe_txt(file)
             with open(file,'a') as file:
-                file.write(cont[0])
-                for v,x in enumerate(cont):
+                file.write(content[0])
+                for v,x in enumerate(content):
                     if v == 0:
                         continue
                     file.write('\n' + x)
-        elif type(cont) == str:
+        elif type(content) == str:
+            files_handler.wipe_txt(file)
             with open(file, 'w') as file:
-                file.write(cont)
+                file.write(content)
         else:
             raise TypeError("Not str or list object")
                 

@@ -1,15 +1,16 @@
-import gi, sys, os, time, threading
+import gi, sys, os, threading
 gi.require_version('Gtk', '4.0')
 gi.require_version('Adw', '1')
 
 from gi.repository import Gtk, Gio, Adw, Pango, GLib, GObject
 from modules.funcs import jsonEx, files_handler, finder, compress
+from shutil import move
 Adw.init()
 
         
 class DialogSelecFolder(Gtk.FileChooserDialog):
     # Definindo o diretório padrão.
-    def __init__(self, parent, inputx=None, folder=True, func=None, cmp=False, progress_widget=None, label_widget=None,files=None):
+    def __init__(self, parent, inputx=None, folder=True, func=None, cmp=False, label_widget=None,files=None):
         self.input = inputx
         self.folder = folder
         self.func = func
@@ -38,7 +39,10 @@ class DialogSelecFolder(Gtk.FileChooserDialog):
         if response == Gtk.ResponseType.OK:
             if self.folder:
                 glocalfile = self.get_file()
-                self.input.set_text(glocalfile.get_path())
+                if self.input:
+                    self.input.set_text(glocalfile.get_path())
+                if self.func:
+                    self.func(glocalfile)
             else:
                 self.folder = self.get_file()
                 if self.cmp:
@@ -123,6 +127,7 @@ class ResultsWindow(Gtk.Dialog):
         self.btt1 = Gtk.Button.new()
         self.btt2 = Gtk.Button.new()
         self.btt3 = Gtk.Button.new()
+        self.btt4 = Gtk.Button.new()
         self.label_info = Gtk.Label.new()
         self.label_prog = Gtk.Label.new()
         self.progress = Gtk.ProgressBar.new()
@@ -131,13 +136,15 @@ class ResultsWindow(Gtk.Dialog):
         self.progress.set_show_text(True)
         self.btt1.set_label("Guardar resultados")
         self.btt2.set_label("Comprimir archvios")
-        self.btt3.set_label("Filtrar por nombre")
+        self.btt3.set_label("Mover archivos")
+        self.btt4.set_label("Filtrar por nombre")
         self.label_info.set_label("Operacion: N/A ")
         self.label_prog.set_label("Progreso: N/A")
         self.progress.set_text("N/A")
         self.btt1.connect('clicked',self.btt_clicked)
         self.btt2.connect('clicked', self.comp_clicked)
-        self.btt3.connect('clicked', self.filter_clicked)
+        self.btt3.connect('clicked', self.mv_clicked)
+        self.btt4.connect('clicked', self.filter_clicked)
 
         labels_box.append(child=self.label_info)
         labels_box.append(child=self.label_prog)
@@ -145,18 +152,29 @@ class ResultsWindow(Gtk.Dialog):
         hbuton_box.append(child=self.btt1)
         hbuton_box.append(child=self.btt2)
         hbuton_box.append(child=self.btt3)
+        hbuton_box.append(child=self.btt4)
         hbuton_box.append(child=labels_box)
 
         progress_box.append(child=self.progress)
         progress_box.set_homogeneous(True)
-
-    def update_prog(self):
+    
+    def unable_btts(self):
         self.btt2.set_sensitive(False)
+        self.btt3.set_sensitive(False)
+    
+    def enable_btts(self):
+        self.btt2.set_sensitive(True)
+        self.btt3.set_sensitive(True)
+    
+    def update_prog(self):
+        self.unable_btts()
         for x,v in enumerate(self.find_obj.generalize()):
             self.comp.add_single(v)
             GLib.idle_add(self.progress.set_fraction, x / len(self.find_obj.generalize()))
+            GLib.idle_add(self.progress.set_text, v)
             GLib.idle_add(self.label_prog.set_label,f"Progreso: {int(x * 100 / len(self.find_obj.generalize()))}%")
         self.comp.finish()
+        self.enable_btts()
 
     def asd(self,a):
         self.comp = compress(a, format='zip')
@@ -165,6 +183,8 @@ class ResultsWindow(Gtk.Dialog):
 
     def new_file(self,file):
         files_handler.save(file.get_path(),self.find_obj.generalize())
+
+
 
     def btt_clicked(self, btt):
         DialogSelecFolder(self.get_parent(),folder=False, func=self.new_file)
@@ -175,25 +195,74 @@ class ResultsWindow(Gtk.Dialog):
     def filter_clicked(self,btt):
         #self.find_obj.
         pass
+    
+    def move_runner(self,path):
+        self.label_info.set_label("Operacion: Mover")
+        self.path = path.get_path()
+        self.unable_btts()
+        threading.Thread(target=self.move).start()
+    
+    def move(self):
+        self.unable_btts()
+        for x,v in enumerate(self.find_obj.generalize()):
+            try:
+                move(v,self.path)
+            except:
+                continue
+            GLib.idle_add(self.progress.set_fraction, x / len(self.find_obj.generalize()))
+            GLib.idle_add(self.progress.set_text, v)
+            GLib.idle_add(self.label_prog.set_label,f"Progreso: {int(x * 100 / len(self.find_obj.generalize()))}%")
+        GLib.idle_add(self.progress.set_fraction, 1.0)
+        GLib.idle_add(self.label_prog.set_label,"Progreso: 100%")
+        self.enable_btts()
+            
+    def mv_clicked(self,btt):
+        DialogSelecFolder(self.get_parent(),folder=True, func=self.move_runner)
 
-    def on_question_clicked(self, widget):
-        dialog = Gtk.MessageDialog(
-            transient_for=self.get_parent(),
-            flags=Gio.ApplicationFlags.FLAGS_NONE,
-            message_type=Gtk.MessageType.QUESTION,
-            buttons=Gtk.ButtonsType.YES_NO,
-            text=self.dialog_msg1,
-        )
-        dialog.format_secondary_text(
-            self.dialog_msg2
-        )
-        response = dialog.run()
-        if response == Gtk.ResponseType.YES:
-            self.dialog_response = True
-        elif response == Gtk.ResponseType.NO:
-            self.dialog_response = False
+class PreferencesDialog(Gtk.Dialog):
+    names = list(x for x in jsonEx.get('modules/exts.json'))
+    config = jsonEx.get('modules/exts.json')
+    items = list(map(lambda x: x.capitalize(), names))
 
-        dialog.destroy()
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+
+        self.set_title(
+            title='Extensiones'
+        )
+        self.set_default_size(width=int(1366 / 2), height=int(768 / 2))
+        self.set_size_request(width=int(1366 / 2), height=int(768 / 2))
+
+        vbox = Gtk.Box.new(orientation=Gtk.Orientation.VERTICAL, spacing=12)
+        vbox.set_margin_top(margin=12)
+        vbox.set_margin_end(margin=12)
+        vbox.set_margin_bottom(margin=12)
+        vbox.set_margin_start(margin=12)
+        self.set_child(child=vbox)
+
+        self.listbox = Gtk.ListBox.new()
+        self.listbox.set_selection_mode(mode=Gtk.SelectionMode.NONE)
+        self.listbox.get_style_context().add_class(class_name='boxed-list')
+        vbox.append(child=self.listbox)
+
+        for item in self.items:
+            icon = Gtk.Image.new_from_icon_name(
+                icon_name='text-x-generic-symbolic'
+            )
+
+            switch = Gtk.Switch.new()
+            switch.set_valign(align=Gtk.Align.CENTER)
+            switch.connect('notify::active', self.on_switch_button_clicked)
+
+            adw_action_row = Adw.ActionRow.new()
+            adw_action_row.set_title(title=item)
+            adw_action_row.set_subtitle(subtitle='Extension')
+            adw_action_row.add_prefix(widget=icon)
+            adw_action_row.add_suffix(widget=switch)
+            self.listbox.append(child=adw_action_row)
+
+    def on_switch_button_clicked(self, switch, boolean):
+        print(switch.get_active())
 
 class CustomDialog(Gtk.Dialog):
 
@@ -262,8 +331,12 @@ class gtk(Adw.Application):
         ResultsWindow().present()
     def others_clicked(self,btt):
         print("Debug other")
+    
+    def config_clicked(self,btt):
+        PreferencesDialog().present()
+
     def on_activate(self,app):  
-        # Definicion de objetos      
+        # Definicion de objetos   
         self.builder = Gtk.Builder.new_from_file('GUI/.FRONTEND/gui.ui')
         self.main_win = self.builder.get_object('main_window')
         self.organizator = self.builder.get_object('organizator')
@@ -271,6 +344,7 @@ class gtk(Adw.Application):
         self.combobox = self.builder.get_object("combo")
         self.btt1 = self.builder.get_object("exam_bt")
         self.btt2 = self.builder.get_object("other_btt")
+        self.btt3 = self.builder.get_object("conf_btt")
         self.find_btt = self.builder.get_object("find")
         self.combo_selected = None
 
@@ -287,6 +361,7 @@ class gtk(Adw.Application):
         self.combobox.connect('changed', self.combo_on_changed)
         self.btt1.connect('clicked', self.exam_clicked)
         self.btt2.connect('clicked', self.others_clicked)
+        self.btt3.connect('clicked', self.config_clicked)
         self.find_btt.connect('clicked', self.find)
         self.add_window(self.main_win)
         self.main_win.present()
