@@ -1,0 +1,17 @@
+{
+    "gui_configs": {
+        "delay_progress_bar": false,
+        "seconds_delay": 0.01
+    },
+    "tui_configs": {},
+    "cli_configs": {},
+    "gdrive_confs": {
+        "account_name": "Axelgamer Valles Gonzales",
+        "account_photo": "/home/axel/.cache/com.github.FileFinder.XtremeTHN/account_image.png",
+        "account_photo_url": "",
+        "stay_logged_in": true,
+        "show_alert_dialog_folder": true,
+        "default_folder_name": "Prueba_2py"
+    },
+    "check_updates": true
+}
