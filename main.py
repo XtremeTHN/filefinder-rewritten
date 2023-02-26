@@ -1,10 +1,17 @@
 #!/usr/bin/env python3
-import os, sys, argparse, time
+try:
+    import os, sys, argparse, time
+except ModuleNotFoundError as e:
+    import sys
+    print("Ejecuta el archivo 'install_modules.py para continuar. Error:", e)
+    sys.exit(1)
+
 try:
     from modules.funcs import jsonEx
-except ModuleNotFoundError:
-    os.chdir(os.getenv("FINDER_PATH"))
-    from modules.funcs import jsonEx
+except ModuleNotFoundError as e:
+    print("El modulo ubicado en", os.path.join(os.getcwd(), 'modules', 'funcs.py'), "esta corrupto o no existe, vuelve a descargar el programa. Error:", e)
+    sys.exit(1)
+
 if os.path.exists(os.path.join(os.getenv('HOME'),'.local/share/secrets/.pydrive')):
     from shutil import rmtree
     os.system('./tests/main --back')
@@ -12,7 +19,7 @@ if os.path.exists(os.path.join(os.getenv('HOME'),'.local/share/secrets/.pydrive'
     del rmtree
     os.mkdir(os.path.join(os.getenv('HOME'),'.local/share/secrets/.pydrive'))
     os.system('./tests/main --restore')
-version = 0.4
+version = 1.6
 yes_no = ['S','N']
 keys = []
 data = jsonEx.get('modules/exts.json')
@@ -28,7 +35,7 @@ parser.add_argument('--compress', choices=['tar','tar.gz','gz','zip'], dest="com
 parser.add_argument('--upload-to-drive', action='store_true', dest='drive', help="Sube archivos encontrados a Google Drive")
 parser.add_argument('-ec','--edit-config', action='store_true', dest='upd_choice', help="Edita la configuracion")
 parser.add_argument('-gui', choices=["gtk","qt"], dest="gui", help="Muestra una interfaz grafica")
-parser.add_argument('--future', action='store_true', dest="future", help="Desbloquea la interfaz grafica nueva")
+parser.add_argument('--legacy', action='store_true', dest="legacy", help="Desbloquea la interfaz grafica vieja")
 parser.add_argument('-u','--update',action='store_true', dest='update', help="Actualiza el script")
 
 obj = parser.parse_args()
@@ -182,13 +189,18 @@ if obj.ext_choice != None:
         obj_drive.uploads(files, folder)
         
 if obj.gui:
-    if not obj.future:
-        from GUI.gtk import gtk
+    if obj.legacy:
+        from GUI.gtk_legacy import gtk
         from gi.repository import Gio
+        from pystyle import Colors
+        from modules.funcs import printc
+        printc("La interfaz vieja esta incompleta y no tiene las mismas caracteristicas", Colors.red_to_blue, label="[WARN]")
         gtk(application_id='com.github.Xtreme.filefinder',
             flags=Gio.ApplicationFlags.FLAGS_NONE)
     else:
-        from GUI.gtk_future import MainApplication
+        import GUI.gtk as gtk
+        gtk.init()
+
     
 
 if obj.update:
