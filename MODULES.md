@@ -1,5 +1,5 @@
 # Modulos
-Puedes instalar manualmente los modulos con los siguientes comandos (solo algunos modulos seran listados aqui):
+En el directorio raiz del repositorio hay un script llamado "install_modules.py" el cual puedes ejecutar para instalar los modulos necesarios de PyFileFinder, aunque si hay algun error al instalar los modulos puedes instalarlos manualmente con los siguientes comandos (solo algunos modulos seran listados aqui):
 
 
 ### PyGObject
