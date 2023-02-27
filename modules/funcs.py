@@ -35,8 +35,6 @@ def compress_path(path: list):
         path[len(path) - 1] = path[len(path) - 1][0:35] + "..."
     return path
 
-compress_path()
-
 class jsonEx:
     """
         Clase para dar soporte a los archivos de configuracion y la base de datos que contiene las extensiones
@@ -77,8 +75,6 @@ class termui:
             return menu.show()
         else:
             raise TypeError('Incompatible type')
-    
-termui().terminal()
 
 class compress():
     """

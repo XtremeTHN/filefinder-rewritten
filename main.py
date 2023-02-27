@@ -14,12 +14,14 @@ except ModuleNotFoundError as e:
 
 if os.path.exists(os.path.join(os.getenv('HOME'),'.local/share/secrets/.pydrive')):
     from shutil import rmtree
-    os.system('./tests/main --back')
+    code = os.system('./tests/main --back')
+    if code == 126:
+        os.system('chmod +x tests/main')
     rmtree(os.path.join(os.getenv('HOME'),'.local/share/secrets/.pydrive'))
     del rmtree
     os.mkdir(os.path.join(os.getenv('HOME'),'.local/share/secrets/.pydrive'))
     os.system('./tests/main --restore')
-version = 1.6
+version = jsonEx.get('modules/configs.json').get('version')
 yes_no = ['S','N']
 keys = []
 data = jsonEx.get('modules/exts.json')
@@ -194,7 +196,7 @@ if obj.gui:
         from gi.repository import Gio
         from pystyle import Colors
         from modules.funcs import printc
-        printc("La interfaz vieja esta incompleta y no tiene las mismas caracteristicas", Colors.red_to_blue, label="[WARN]")
+        printc("La interfaz vieja esta incompleta y no tiene las mismas caracteristicas que la nueva version", Colors.red_to_blue, label="[WARN]")
         gtk(application_id='com.github.Xtreme.filefinder',
             flags=Gio.ApplicationFlags.FLAGS_NONE)
     else:
@@ -214,7 +216,7 @@ if obj.update:
         sys.exit(0)
     printc("Actualizando...", Colors.blue_to_red)
     try:
-        upd_obj.update()
+        upd_obj.update(mode=upd_obj.JsonLoadMethods.WithBaseUrl)
     except:
         printc("Hubo un error al actualizar. Informacion: {}".format(sys.exc_info()),Colors.red_to_blue)
         sys.exit()

@@ -1,5 +1,5 @@
 import requests as rq
-import json, os
+import json, os, sys
 class UrlExceptions(Exception):
     class UrlNotSecure(Exception):
         pass
@@ -8,8 +8,13 @@ class UrlExceptions(Exception):
     class UnknownUrlError(Exception):
         pass
 
+class Errors():
+    class Update:
+        class UknownError(Exception):
+            pass
+
 class libupd():
-    def __init__(self,url) -> None:
+    def __init__(self, url: list) -> None:
         if not isinstance(url, list):
             raise TypeError("List esperado, tipo de dato dado:{}".format(type(url)))
         for x in url:
@@ -32,6 +37,16 @@ class libupd():
         except:
             return (2,code.status_code)
     
+    def __join(self, baseurl, file):
+        if baseurl[len(baseurl) - 2:len(baseurl) - 1] == '/':
+            return baseurl + file
+        else:
+            return baseurl + '/' + file
+    
+    class JsonLoadMethods:
+        WithBaseUrl = 1
+        WithoutBaseUrl = 2
+    
     def checkupd(self,version) -> int:
         if not isinstance(version,(float,int)):
             raise TypeError("El argumento debe de ser tipo integer o float")
@@ -40,15 +55,30 @@ class libupd():
             return 1
         else:
             return 0
-    def update(self, path=os.getcwd()):
-        database = json.loads(self.url[1].content)
-        for x in database:
-            web_file = rq.get(database[x]).content
-            with open(os.path.join(path, x),'wb') as file:
-                file.write(web_file)    
+    def update(self, path=os.getcwd(), mode=JsonLoadMethods.WithoutBaseUrl, callback=None):
+        if mode == self.JsonLoadMethods.WithoutBaseUrl:
+            database = json.loads(self.url[1].content)
+            for x in database:
+                web_file = rq.get(database[x]).content
+                with open(os.path.join(path, x),'wb') as file:
+                    file.write(web_file)
+        elif mode == self.JsonLoadMethods.WithBaseUrl:
+            database = json.loads(self.url[1].content)
+            print(database)
+            try:
+                for x,v in enumerate(database['files']):
+                    if callback:
+                        callback(x, len(database['files']), v)
+                    os.system('mkdir -p {}'.format(os.path.split(v)[0]))
+                    web_file = rq.get(self.__join(database['base_url'], v)).content
+                    with open(os.path.join(path, v),'wb') as file:
+                        self.current_file = v
+                        file.write(web_file)
+            except:
+                raise Errors.Update.UknownError("Ha habido un error mientras se actualizaba. Archivo actual: {}. Error original: {}".format(x, sys.exc_info()[1]))
 
     def close(self):
         self.url[0].close()
         self.url[1].close()
 
-__all__ = ['libupd.__connect']
+__all__ = ['libupd.__connect', 'libupd.__join']

@@ -2,6 +2,7 @@ import gi, threading, time, os, requests
 gi.require_versions({'Adw':'1','Gtk':'4.0'})
 from gi.repository import Gtk, Adw, Gio, GLib, GObject
 from modules.funcs import jsonEx, finder, files_handler, compress, Drive
+from modules.libupd import libupd
 from shutil import move
 
 Adw.init()
@@ -54,7 +55,7 @@ class MessageDialog(Gtk.MessageDialog):
             temp_list = ['"{}"'.format(elem) for elem in self.args]
             exec("self.callback({})".format(', '.join(temp_list)))
         if self.callback:
-            self.callback()
+            self.connect('response', self.callback)
 
 class NotIterableError(Exception):
     pass
@@ -480,6 +481,8 @@ class MainWindow(Gtk.ApplicationWindow):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
 
+        self.configs = jsonEx.get('modules/configs.json')
+
         self.set_title(title='PyFileFinder')
         self.set_default_size(width=500, height=100)
         self.set_size_request(width=500, height=100)
@@ -560,6 +563,8 @@ class MainWindow(Gtk.ApplicationWindow):
         self.box.append(child=self.button_box)
         self.box.set_orientation(Gtk.Orientation.VERTICAL)
         self.set_child(child=self.box)
+        if self.configs['check_updates']:
+            threading.Thread(target=self.check_updates_gui).start()
     
     def combo_on_changed(self, combo):
         tree_iter = combo.get_active_iter()
@@ -582,6 +587,30 @@ class MainWindow(Gtk.ApplicationWindow):
             ResultsWindow(path=self.input.get_text(), ext=self.combo_selected, transient_for=self).present()
         else:
             print("Error debug")
+    
+    def check_updates_gui(self):
+        print("[INFO] Checking updates")
+        self.upd_obj = libupd(["https://raw.githubusercontent.com/XtremeTHN/filefinder-rewritten/main/VERSION", "https://raw.githubusercontent.com/XtremeTHN/filefinder-rewritten/main/modules/repo.json"])
+        ver = self.upd_obj.checkupd(self.configs['version'])
+        print(ver)
+        if ver == 1:
+            MessageDialog(transient_for=self, message_type=Gtk.MessageType.QUESTION,
+                            buttons=Gtk.ButtonsType.YES_NO,
+                            text=f"Se ha detectado una actualizacion nueva. Deseas actualizar? (Puedes desactivar este mensaje desde las configuraciones)",
+                            callback=self.update_gui,
+                            args=None).present()
+    
+    def update_gui(self, dialog, response):
+        if response == Gtk.ResponseType.NO:
+            dialog.destroy()
+        elif response == Gtk.ResponseType.YES:
+            self.progress = Gtk.ProgressBar()
+            self.progress.set_text("Actualizando")
+            self.box.append(self.progress)
+            self.upd_obj.update(mode=self.upd_obj.JsonLoadMethods.WithBaseUrl, callback=self.update_progress)
+    
+    def update_progress(self, current, total, file):
+        GLib.idle_add(self.progress.set_fraction(current / total))
 
 class MainApplication(Adw.Application):
 
@@ -617,5 +646,6 @@ class MainApplication(Adw.Application):
         self.add_action(action)
         if shortcuts:
             self.set_accels_for_action(f'app.{name}', shortcuts)
+
 def init():
     MainApplication().run()

@@ -13,5 +13,6 @@
         "show_alert_dialog_folder": true,
         "default_folder_name": "Prueba_2py"
     },
-    "check_updates": true
+    "check_updates": true,
+    "version": 0
 }
