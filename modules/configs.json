@@ -1,18 +1,20 @@
 {
     "gui_configs": {
-        "delay_progress_bar": false,
-        "seconds_delay": 0.01
+        "delay_progress_bar": true,
+        "seconds_delay": 0.0
     },
-    "tui_configs": {},
+    "tui_configs": {
+        "show_current_time": true
+    },
     "cli_configs": {},
     "gdrive_confs": {
-        "account_name": "Axelgamer Valles Gonzales",
+        "account_name": "Axel",
         "account_photo": "/home/axel/.cache/com.github.FileFinder.XtremeTHN/account_image.png",
         "account_photo_url": "",
         "stay_logged_in": true,
         "show_alert_dialog_folder": true,
-        "default_folder_name": "Prueba_2py"
+        "default_folder_name": "Archivos"
     },
-    "check_updates": true,
-    "version": 0
+    "check_updates": false,
+    "version": 2.0
 }

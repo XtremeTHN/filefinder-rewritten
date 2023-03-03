@@ -594,11 +594,13 @@ class MainWindow(Gtk.ApplicationWindow):
         ver = self.upd_obj.checkupd(self.configs['version'])
         print(ver)
         if ver == 1:
-            MessageDialog(transient_for=self, message_type=Gtk.MessageType.QUESTION,
+            print("")
+            """MessageDialog(transient_for=self, message_type=Gtk.MessageType.QUESTION,
                             buttons=Gtk.ButtonsType.YES_NO,
                             text=f"Se ha detectado una actualizacion nueva. Deseas actualizar? (Puedes desactivar este mensaje desde las configuraciones)",
                             callback=self.update_gui,
-                            args=None).present()
+                            args=None).present()"""
+            self.update_gui()
     
     def update_gui(self, dialog, response):
         if response == Gtk.ResponseType.NO:
@@ -611,6 +613,7 @@ class MainWindow(Gtk.ApplicationWindow):
     
     def update_progress(self, current, total, file):
         GLib.idle_add(self.progress.set_fraction(current / total))
+        GLib.idle_add(self.progress.set_text, file)
 
 class MainApplication(Adw.Application):
 

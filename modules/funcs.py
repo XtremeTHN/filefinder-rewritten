@@ -60,6 +60,9 @@ class termui:
     """
         Clase para facilitar la escritura de un TUI
     """
+    class ChoicesTypes:
+        boolean = ['Activado', 'Desactivado']
+        
     def terminal(opts, return_type=bool) -> int | bool:
         """
             Muestra un menu interactivo. Devuelve int o bool, por predeterminado int
@@ -154,7 +157,7 @@ class finder():
             return 1
         return founded
     
-    def find_userext(self,userext) -> dict:
+    def find_with_ext(self,userext) -> dict:
         """
             Devuelve un diccionario conteniendo los archivos encontrados con la extension especificada
             userext: Extension con la que quieras buscar los archivos
@@ -168,14 +171,16 @@ class finder():
         self.all.extend(path)
         return founded
     
-    def find_in_list(self,word,strict=False) -> list:
+    def find_with_word(self,word,strict=False, cached=False) -> list:
         """
-            La funcion busca entre los archivos ya encontrados con la funcion find() con la variable word. Devuelve una lista
+            La funcion busca entre los archivos ya encontrados con la funcion find() o los vuelve a buscar con la misma funcion. Devuelve una lista
             word: Palabra por filtrar entre los archivos
             strict=False: Por defecto es falso, si es verdadero se usara una funcion para encontrar mas estrictamente entre los archivos
+            cached=False: Por defecto es falso, si es verdadero se usara los archivos ya encontrados, por el contrario, si es falso se creara otra busqueda
         """
         if not strict:
             word = os.path.splitext(word)[0]
+            self.find()
             result = filter(lambda x: re.search("{}.*".format(word), x), self.all)
             result = list(result)
             return result
