@@ -19,20 +19,16 @@ Opciones
 
 ## Ejemplo de Uso
 
-Asumiendo que el programa ya fue compilado con cargo build, asi se puede usar el programa
+Asumiendo que el programa ya fue compilado con `cargo build`, asi se puede usar el programa
 
-Para buscar archivos con extensión .txt en la carpeta actual, se debe ejecutar:
+Para buscar archivos que esten relacionados con documentos en la carpeta actual, se debe ejecutar:
+```bash
+./finder --find docs
+```
 
-  ./finder -f txt
+Para buscar archivos que esten relacionados con la programacion en una carpeta especifica, se debe ejecutar:
+```bash
+./finder --find devs --path /home/usuario/Projects/
+```
 
-Para buscar archivos con extensión .rs en la carpeta /home/usuario/proyectos, se debe ejecutar:
-
-  ./finder -f rs -p /home/usuario/proyectos
-
-Para buscar archivos con extensión .txt que contengan la palabra hola en la carpeta actual, se debe ejecutar:
-
-  ./finder -f txt -s hola
-
-Para buscar archivos con extensión .txt que contengan la palabra hola en la carpeta actual y mostrar los resultados sin formatear el texto, se debe ejecutar:
-
-  ./finder -f txt -s hola --no-formating
+Puedes saber cuantas categorias hay abriendo la base de datos con cualquier editor de texto (es un archivo json)
